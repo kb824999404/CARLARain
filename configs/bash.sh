@@ -1,0 +1,14 @@
+cp seqTown01ClearSunset.yaml seqTown02ClearSunset.yaml
+cp seqTown01ClearSunset.yaml seqTown03ClearSunset.yaml
+cp seqTown01ClearSunset.yaml seqTown04ClearSunset.yaml
+cp seqTown01ClearSunset.yaml seqTown05ClearSunset.yaml
+cp seqTown01ClearSunset.yaml seqTown06ClearSunset.yaml
+cp seqTown01ClearSunset.yaml seqTown07ClearSunset.yaml
+cp seqTown01ClearSunset.yaml seqTown10ClearSunset.yaml
+cp seqTown01ClearNight.yaml seqTown02ClearNight.yaml
+cp seqTown01ClearNight.yaml seqTown03ClearNight.yaml
+cp seqTown01ClearNight.yaml seqTown04ClearNight.yaml
+cp seqTown01ClearNight.yaml seqTown05ClearNight.yaml
+cp seqTown01ClearNight.yaml seqTown06ClearNight.yaml
+cp seqTown01ClearNight.yaml seqTown07ClearNight.yaml
+cp seqTown01ClearNight.yaml seqTown10ClearNight.yaml

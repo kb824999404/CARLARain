@@ -1,0 +1,98 @@
+scene:
+  name: seqTown01Clear
+  resolution:
+    - 2048
+    - 1024
+  fps: 10
+  dataRoot: /home/zhoukaibin/code/CARLRain/data
+  cameras: 
+    - rgb
+    - depth
+    - is
+    - ss
+  imgTypes:
+    - jpg
+    - png
+    - png
+    - png
+  main_vehicle: vehicle.tesla.model3
+  vehicleCount: 50
+  walkerCount: 300
+  percentWalkerCrossing: 0.3
+  cameraPos:
+    - [ 0.8,0 ]
+    - [ 0,0 ]
+    - [ 1,0.15 ]
+  useKeyboard: true
+  frameCount: 1000
+  map: Town01
+  environment:
+    sun: day
+    weather: clear
+    # altitude: 45
+    # azimuth: 180
+    # clouds: 100.0
+    # rain: 50.0
+    # puddles: 50.0
+    # wind: 50.0
+    # fog: 5.0
+    # fogdist: 10.0
+    # fogfalloff: 1.0
+    # wetness: 50.0
+    # scatteringintensity: 5.0
+    # rayleighscatteringscale: 1.0
+    # miescatteringscale: 1.0
+    # dust_storm: 10.0
+    # cars: [ Fog ]
+    # lights:
+    # lightgroup:
+
+crig:
+  netED: /home/zhoukaibin/code/CARLRain/CRIGNet/log_raintrainl_128/00005-crig_control_dual_cgan_g1w0.2_rainTrainL_128-VRGNet/model/ED_state_200.pt
+  patchSize: 128
+  nc: 3
+  nz: 128
+  nef: 32
+  nlabel: 2
+  backbone: VRGNet
+  w_dim: 128
+  use_mapping: false
+  gpu: 4
+  # mode: RANDOM_Z_FIXED_LABEL
+  # mode: RANDOM_LABEL_FIXED_Z
+  mode: RANDOM_Z_AND_LABEL
+  label: [ 0,0 ]
+  seed: 123
+  sampleNum: 100
+  
+controlnet:
+  model_config: models/cldm_v15.yaml
+  source_path: rain_crig_128
+  resume: /home/zhoukaibin/code/CARLRain/RainControlNet/logs/crig_hint256-128_out512_4xgrad_1e-4-2024-10-05-T07-21-55/version_0/epoch=417-step=19999.ckpt
+  batch_size: 2
+  resolution: 512
+  cfg: 7
+  steps: 20
+  gpu: 4
+
+hrig:
+  resume:  /home/zhoukaibin/code/CARLRain/HRIGNet/logs/2023-10-21T21-50-57_blender-hrig-rainlayer+masked-gdm512-hw512-hybrid-unet128-em3
+  ckpt: epoch=000098
+  steps: 20
+  overlap: 64
+  gpu: 4
+  use_lighten: true
+  use_combine: true
+  data:
+    target: main.DataModuleFromConfig
+    params:
+      batch_size: 2
+      num_workers: 0
+      validation:
+        target: hrig_blender.data.rainReal.RainCARLA
+        params:
+          data_root: seqTown01Clear
+          background_path: background
+          rain_path: rain
+          size: 512
+          readImg: true

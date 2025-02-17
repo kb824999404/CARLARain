@@ -1,0 +1,12 @@
+data:
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 2
+    num_workers: 4
+    validation:
+      target: hrig_blender.data.rainReal.RainBlenderReal
+      params:
+        data_root: /home/zhoukaibin/data/dataset/RealBGMask/RainTrainL_rain512_randomRain_ratio1
+        json_file: /home/zhoukaibin/data/dataset/RealBGMask/RainTrainL_rain512_randomRain_ratio1/dataset.json
+        size: 512
+        readImg: true
