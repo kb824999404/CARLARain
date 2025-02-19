@@ -55,7 +55,7 @@ CARLARain是一个支持复杂光照环境雨景模拟的自动驾驶模拟器�
 
 ### 准备yaml配置文件
 
-* 参考`configs/seqTest.yaml`，具体内容解释见`Docs/config.md`
+* 参考`configs/seqTest.yaml`，具体内容解释见[Docs/config.md](Docs/config.md)
 
 ### 运行
 
