@@ -191,7 +191,7 @@ controlnet: # the config of RainControlNet
   steps: 20                             # the sampling steps in diffusion model
   gpu: 4                                # the used gpu id
 
-hrig:   # HRIGNet配置
+hrig:   # the config of HRIGNet
   resume:  /CARLARain/HRIGNet/logs/2023-10-21T21-50-57_blender-hrig-rainlayer+masked-gdm512-hw512-hybrid-unet128-em3    # the path of the model weights
   ckpt: epoch=000098                        # the name of the model weights
   steps: 20                                 # the sampling steps in diffusion model
