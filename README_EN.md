@@ -17,7 +17,7 @@ CARLARain is an autonomous driving simulator framework that supports the simulat
 
 <div align="center">
 
-![](Docs/CARLARain图.svg)
+![](Docs/CARLARain图EN.svg)
 
 
 <table>
