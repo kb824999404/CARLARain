@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雨图像生成</title>
+    <!-- 引入 Element Plus 的 CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <!-- 引入 Vue 3 -->
+    <script src="https://unpkg.com/vue@3"></script>
+    <!-- 引入 Element Plus 的 JS -->
+    <script src="https://unpkg.com/element-plus"></script>
+    <!-- 引入 Axios -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f7fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        }
+        .upload-section {
+            margin-bottom: 20px;
+        }
+        .task-list {
+            margin-top: 20px;
+        }
+        .refresh-button {
+            margin-bottom: 20px;
+        }
+        .image-preview {
+            max-width: 100%;
+            max-height: 80vh;
+            display: block;
+            margin: 0 auto;
+        }
+        .param-item {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <h1>图像生成</h1>
+            <!-- 标签页 -->
+            <el-tabs v-model="activeTab" type="card">
+                <!-- 雨景图像生成标签页 -->
+                <el-tab-pane label="雨景图像生成" name="rainy-scene">
+                    <!-- 上传数据和参数输入卡片 -->
+                    <el-card class="upload-section">
+                        <template #header>
+                            <div class="card-header">
+                                <span>上传图像和设置参数</span>
+                            </div>
+                        </template>
+
+                        <!-- 上传背景图像 -->
+                        <label for="background-upload">上传背景图像：</label>
+                        <el-upload
+                            action="#"
+                            :auto-upload="false"
+                            :on-change="handleBackgroundChange"
+                            :limit="1"
+                            accept="image/*"
+                        >
+                            <template #trigger>
+                                <el-button type="primary">上传背景图像</el-button>
+                            </template>
+                        </el-upload>
+
+                        <!-- 上传雨纹图像 -->
+                        <label for="rain-upload" style="display: block; margin-top: 10px;">上传雨纹图像：</label>
+                        <el-upload
+                            action="#"
+                            :auto-upload="false"
+                            :on-change="handleRainChange"
+                            :limit="1"
+                            accept="image/*"
+                            style="margin-top: 10px;"
+                        >
+                            <template #trigger>
+                                <el-button type="primary">上传雨纹图像</el-button>
+                            </template>
+                        </el-upload>
+
+                        <!-- 参数设置 -->
+                        <label for="inference-steps">扩散模型推理步数：</label>
+                        <div class="param-item">
+                            <el-input v-model="inferenceSteps" placeholder="请输入扩散模型推理步数" type="number" min="1"></el-input>
+                        </div>
+
+                        <div class="param-item">
+                            <el-switch v-model="usePostProcessing" active-text="使用后处理（lighten）"></el-switch>
+                        </div>
+
+                        <div class="param-item">
+                            <el-switch v-model="blendBackground" active-text="混合背景图像和生成图像"></el-switch>
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <el-button type="success" @click="uploadFiles" style="margin-top: 10px;">提交</el-button>
+                    </el-card>
+
+                    <!-- 任务列表 -->
+                    <div class="task-list">
+                        <el-button type="info" @click="fetchTasks" class="refresh-button">刷新任务列表</el-button>
+                        <el-table :data="tasks" style="width: 100%">
+                            <el-table-column prop="task_name" label="任务名称" width="180"></el-table-column>
+                            <el-table-column prop="created_at" label="创建时间" width="180"></el-table-column>
+                            <el-table-column prop="status" label="状态" width="120">
+                                <template #default="{ row }">
+                                    <el-tag :type="row.status === 'completed' ? 'success' : row.status === 'pending' ? 'warning' : 'danger'">
+                                        {{ row.status === 'completed' ? '已完成' : row.status === 'pending' ? '进行中' : '失败' }}
+                                    </el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作">
+                                <template #default="{ row }">
+                                    <el-button @click="openPreviewDialog(row.task_id, 'background')">查看背景</el-button>
+                                    <el-button @click="openPreviewDialog(row.task_id, 'rain')">查看雨纹</el-button>
+                                    <el-button v-if="row.status === 'completed'" @click="openPreviewDialog(row.task_id, 'output')" type="success">查看结果</el-button>
+                                    <el-button v-if="row.status === 'completed'" @click="downloadImage(row.task_id)" type="primary">下载结果</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+                </el-tab-pane>
+                <!-- 雨纹图像生成标签页 -->
+                <el-tab-pane label="雨纹图像生成" name="rain-pattern">
+                    <!-- 上传数据和参数输入卡片 -->
+                    <el-card class="upload-section">
+                        <template #header>
+                            <div class="card-header">
+                                <span>设置参数</span>
+                            </div>
+                        </template>
+
+                        <!-- 雨强度输入 -->
+                        <label for="rain-intensity">雨强度 (-1 - 1)：</label>
+                        <div class="param-item">
+                            <el-input v-model="rainIntensity" placeholder="请输入雨强度" type="number" min="-1" max="1"></el-input>
+                        </div>
+
+                        <!-- 方向输入 -->
+                        <label for="rain-direction">方向 (-1 - 1)：</label>
+                        <div class="param-item">
+                            <el-input v-model="rainDirection" placeholder="请输入方向" type="number" min="-1" max="1"></el-input>
+                        </div>
+
+                        <!-- 潜在变量输入 -->
+                        <label for="latent-variable">潜在变量 (-1 - 1)：</label>
+                        <div class="param-item">
+                            <el-input v-model="latentVariable" placeholder="请输入潜在变量" type="number" min="-1" max="1"></el-input>
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <el-button type="success" @click="generateRainPattern" style="margin-top: 10px;">生成雨纹图像</el-button>
+                    </el-card>
+
+                    <!-- 任务列表 -->
+                    <div class="task-list">
+                        <el-button type="info" @click="fetchRainPatternTasks" class="refresh-button">刷新任务列表</el-button>
+                        <el-table :data="rainPatternTasks" style="width: 100%">
+                            <el-table-column prop="task_name" label="任务名称" width="180"></el-table-column>
+                            <el-table-column prop="created_at" label="创建时间" width="180"></el-table-column>
+                            <el-table-column prop="status" label="状态" width="120">
+                                <template #default="{ row }">
+                                    <el-tag :type="row.status === 'completed' ? 'success' : row.status === 'pending' ? 'warning' : 'danger'">
+                                        {{ row.status === 'completed' ? '已完成' : row.status === 'pending' ? '进行中' : '失败' }}
+                                    </el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作">
+                                <template #default="{ row }">
+                                    <el-button v-if="row.status === 'completed'" @click="openRainPatternPreviewDialog(row.task_id, 'output')" type="success">查看结果</el-button>
+                                    <el-button v-if="row.status === 'completed'" @click="downloadRainPatternImage(row.task_id)" type="primary">下载结果</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+                </el-tab-pane>
+            </el-tabs>
+        </div>
+
+        <!-- 图片预览对话框 -->
+        <el-dialog v-model="previewDialogVisible" :title="previewDialogTitle" width="60%">
+            <img :src="previewImageUrl" class="image-preview" alt="预览图片">
+        </el-dialog>
+
+        <!-- 雨纹图像预览对话框 -->
+        <el-dialog v-model="rainPatternPreviewDialogVisible" :title="rainPatternPreviewDialogTitle" width="60%">
+            <img :src="rainPatternPreviewImageUrl" class="image-preview" alt="预览雨纹图片">
+        </el-dialog>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+        const { ElMessage } = ElementPlus; // 引入 ElMessage
+
+        createApp({
+            setup() {
+                // 雨景图像生成相关
+                const tasks = ref([]);
+                const backgroundFile = ref(null);
+                const rainFile = ref(null);
+                const previewDialogVisible = ref(false);
+                const previewImageUrl = ref("");
+                const previewDialogTitle = ref("");
+                const inferenceSteps = ref(50); // 默认推理步数
+                const usePostProcessing = ref(false); // 是否使用后处理
+                const blendBackground = ref(false); // 是否混合背景图像和生成图像
+
+                // 雨纹图像生成相关
+                const rainPatternTasks = ref([]);
+                const rainIntensity = ref(0); // 雨强度
+                const rainDirection = ref(0); // 方向
+                const latentVariable = ref(0); // 潜在变量
+                const rainPatternPreviewDialogVisible = ref(false);
+                const rainPatternPreviewImageUrl = ref("");
+                const rainPatternPreviewDialogTitle = ref("");
+
+                const activeTab = ref('rainy-scene'); // 当前激活的标签页
+
+                const fetchTasks = async () => {
+                    try {
+                        const response = await axios.get('/tasks');
+                        tasks.value = response.data;
+                        ElMessage.success("任务列表刷新成功！");
+                    } catch (error) {
+                        console.error("获取任务列表失败：", error);
+                        ElMessage.error("刷新任务列表失败。");
+                    }
+                };
+
+                const handleBackgroundChange = (file) => {
+                    backgroundFile.value = file.raw;
+                };
+
+                const handleRainChange = (file) => {
+                    rainFile.value = file.raw;
+                };
+
+                const uploadFiles = async () => {
+                    if (!backgroundFile.value || !rainFile.value) {
+                        ElMessage.error("请选择背景图像和雨纹图像。");
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('background', backgroundFile.value);
+                    formData.append('rain', rainFile.value);
+                    formData.append('inference_steps', inferenceSteps.value);
+                    formData.append('use_post_processing', usePostProcessing.value);
+                    formData.append('blend_background', blendBackground.value);
+
+                    try {
+                        const response = await axios.post('/upload', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                        tasks.value.push(response.data);
+                        ElMessage.success("任务创建成功！");
+                    } catch (error) {
+                        console.error("上传文件失败：", error);
+                        ElMessage.error("创建任务失败。");
+                    }
+                };
+
+                const openPreviewDialog = (task_id, image_type) => {
+                    previewImageUrl.value = `/task/${task_id}/image/${image_type}`;
+                    previewDialogTitle.value = `预览${image_type === 'background' ? '背景' : image_type === 'rain' ? '雨纹' : '结果'}`;
+                    previewDialogVisible.value = true;
+                };
+
+                const downloadImage = (task_id) => {
+                    window.open(`/task/${task_id}/image/output`, '_blank');
+                };
+
+                // 雨纹图像生成相关方法
+                const fetchRainPatternTasks = async () => {
+                    try {
+                        // 假设后端有对应的接口
+                        const response = await axios.get('/rain_pattern_tasks');
+                        rainPatternTasks.value = response.data;
+                        ElMessage.success("雨纹图像任务列表刷新成功！");
+                    } catch (error) {
+                        console.error("获取雨纹图像任务列表失败：", error);
+                        ElMessage.error("刷新雨纹图像任务列表失败。");
+                    }
+                };
+
+                const generateRainPattern = async () => {
+                    const formData = new FormData();
+                    formData.append('rain_intensity', rainIntensity.value);
+                    formData.append('rain_direction', rainDirection.value);
+                    formData.append('latent_variable', latentVariable.value);
+
+                    try {
+                        // 假设后端有对应的接口
+                        const response = await axios.post('/generate_rain_pattern', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                        rainPatternTasks.value.push(response.data);
+                        ElMessage.success("雨纹图像生成任务创建成功！");
+                    } catch (error) {
+                        console.error("创建雨纹图像生成任务失败：", error);
+                        ElMessage.error("创建雨纹图像生成任务失败。");
+                    }
+                };
+
+                const openRainPatternPreviewDialog = (task_id, image_type) => {
+                    rainPatternPreviewImageUrl.value = `/rain_pattern_tasks/${task_id}/image/${image_type}`;
+                    rainPatternPreviewDialogTitle.value = `预览雨纹图像结果`;
+                    rainPatternPreviewDialogVisible.value = true;
+                };
+
+                const downloadRainPatternImage = (task_id) => {
+                    window.open(`/rain_pattern_tasks/${task_id}/image/output`, '_blank');
+                };
+
+                onMounted(() => {
+                    fetchTasks();
+                    fetchRainPatternTasks();
+                });
+
+                return {
+                    tasks,
+                    backgroundFile,
+                    rainFile,
+                    previewDialogVisible,
+                    previewImageUrl,
+                    previewDialogTitle,
+                    inferenceSteps,
+                    usePostProcessing,
+                    blendBackground,
+                    fetchTasks,
+                    handleBackgroundChange,
+                    handleRainChange,
+                    uploadFiles,
+                    openPreviewDialog,
+                    downloadImage,
+                    rainPatternTasks,
+                    rainIntensity,
+                    rainDirection,
+                    latentVariable,
+                    rainPatternPreviewDialogVisible,
+                    rainPatternPreviewImageUrl,
+                    rainPatternPreviewDialogTitle,
+                    activeTab,
+                    fetchRainPatternTasks,
+                    generateRainPattern,
+                    openRainPatternPreviewDialog,
+                    downloadRainPatternImage
+                };
+            }
+        }).use(ElementPlus).mount('#app');
+    </script>
+</body>
+</html>
