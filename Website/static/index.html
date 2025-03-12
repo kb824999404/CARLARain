@@ -59,11 +59,16 @@
 <body>
     <div id="app">
         <div class="container">
-            <h1>图像生成</h1>
+            <h1>雨图像生成</h1>
             <!-- 标签页 -->
             <el-tabs v-model="activeTab" type="card">
                 <!-- 雨景图像生成标签页 -->
-                <el-tab-pane label="雨景图像生成" name="rainy-scene">
+                <el-tab-pane label="HRIGNet雨景图像生成" name="rainy-scene">
+                    <p>
+                        <el-link href="https://kb824999404.github.io/HRIG/" target="_blank">
+                            <el-button type="success">查看HRIGNet主页</el-button>
+                        </el-link>
+                    </p>
                     <!-- 上传数据和参数输入卡片 -->
                     <el-card class="upload-section">
                         <template #header>
@@ -157,7 +162,12 @@
                     </div>
                 </el-tab-pane>
                 <!-- 雨纹图像生成标签页 -->
-                <el-tab-pane label="雨纹图像生成" name="rain-pattern">
+                <el-tab-pane label="CRIGNet雨纹图像生成" name="rain-pattern">
+                    <p>
+                        <el-link href="https://doi.org/10.1007/978-981-97-5597-4_8" target="_blank">
+                            <el-button type="success">查看CRIGNet论文</el-button>
+                        </el-link>
+                    </p>
                     <!-- 上传数据和参数输入卡片 -->
                     <el-card class="upload-section">
                         <template #header>
@@ -167,24 +177,23 @@
                         </template>
 
                         <!-- 雨强度输入 -->
-                        <label for="rain-intensity">雨强度 (-1 - 1)：</label>
+                        <label for="rain-intensity">雨强度 [0,1]：</label>
                         <div class="param-item">
-                            <el-input v-model="rainIntensity" placeholder="请输入雨强度" type="number" min="-1"
-                                max="1"></el-input>
+                            <el-input v-model="rainIntensity" placeholder="请输入雨强度" type="number" min="0" max="1"
+                                step="0.01"></el-input>
                         </div>
 
                         <!-- 方向输入 -->
-                        <label for="rain-direction">方向 (-1 - 1)：</label>
+                        <label for="rain-direction">方向 [0,1]：</label>
                         <div class="param-item">
-                            <el-input v-model="rainDirection" placeholder="请输入方向" type="number" min="-1"
-                                max="1"></el-input>
+                            <el-input v-model="rainDirection" placeholder="请输入方向" type="number" min="0" max="1"
+                                step="0.01"></el-input>
                         </div>
 
                         <!-- 潜在变量输入 -->
-                        <label for="latent-variable">潜在变量 (-1 - 1)：</label>
+                        <label for="seed">随机种子(用于生成隐变量)：</label>
                         <div class="param-item">
-                            <el-input v-model="latentVariable" placeholder="请输入潜在变量" type="number" min="-1"
-                                max="1"></el-input>
+                            <el-input v-model="randomSeed" placeholder="请输入随机种子" type="number"></el-input>
                         </div>
 
                         <!-- 提交按钮 -->
@@ -219,6 +228,17 @@
                         </el-table>
                     </div>
                 </el-tab-pane>
+                <el-tab-pane label="CARLARain" name="carlarain">
+                    <p>
+                        <el-link href="https://github.com/kb824999404/CARLARain" target="_blank">
+                            <el-button type="success">查看CARLARain主页</el-button>
+                        </el-link>
+                    </p>
+                    <p>
+                        CARLARain是一个支持复杂光照环境雨景模拟的自动驾驶模拟器框架，基于CARLA实现了驾驶场景的 环境仿真、车辆仿真和行人仿真，并结合HRIGNet和CRIGNet，引入了复杂光照环境下可控且逼真的雨景模拟。该框架可为自动驾驶视觉感知算法构建丰富的雨景仿真训练环境，涵盖多样的时间段和光照条件，满足自动驾驶场景下的语义分割、实例分割、深度估计和目标检测等多个任务的需求。
+                    </p>
+                    <img src="./imgs/CARLARain.svg" style="width: 80%;" />
+                </el-tab-pane>
             </el-tabs>
         </div>
 
@@ -252,9 +272,9 @@
 
                 // 雨纹图像生成相关
                 const rainPatternTasks = ref([]);
-                const rainIntensity = ref(0); // 雨强度
-                const rainDirection = ref(0); // 方向
-                const latentVariable = ref(0); // 潜在变量
+                const rainIntensity = ref(0.5); // 雨强度
+                const rainDirection = ref(0.5); // 方向
+                const randomSeed = ref(123); // 随机种子
                 const rainPatternPreviewDialogVisible = ref(false);
                 const rainPatternPreviewImageUrl = ref("");
                 const rainPatternPreviewDialogTitle = ref("");
@@ -264,7 +284,14 @@
                 const fetchTasks = async () => {
                     try {
                         const response = await axios.get('/tasks');
-                        tasks.value = response.data;
+                        // 对 response.data 按 created_at 排序
+                        const sortedTasks = response.data.sort((a, b) => {
+                            // 将 created_at 转换为 Date 对象进行比较
+                            const dateA = new Date(a.created_at);
+                            const dateB = new Date(b.created_at);
+                            return dateA - dateB; // 升序排序
+                        });
+                        tasks.value = sortedTasks;
                         ElMessage.success("任务列表刷新成功！");
                     } catch (error) {
                         console.error("获取任务列表失败：", error);
@@ -318,9 +345,15 @@
                 // 雨纹图像生成相关方法
                 const fetchRainPatternTasks = async () => {
                     try {
-                        // 假设后端有对应的接口
                         const response = await axios.get('/rain_pattern_tasks');
-                        rainPatternTasks.value = response.data;
+                        // 对 response.data 按 created_at 排序
+                        const sortedTasks = response.data.sort((a, b) => {
+                            // 将 created_at 转换为 Date 对象进行比较
+                            const dateA = new Date(a.created_at);
+                            const dateB = new Date(b.created_at);
+                            return dateA - dateB; // 升序排序
+                        });
+                        rainPatternTasks.value = sortedTasks;
                         ElMessage.success("雨纹图像任务列表刷新成功！");
                     } catch (error) {
                         console.error("获取雨纹图像任务列表失败：", error);
@@ -332,7 +365,7 @@
                     const formData = new FormData();
                     formData.append('rain_intensity', rainIntensity.value);
                     formData.append('rain_direction', rainDirection.value);
-                    formData.append('latent_variable', latentVariable.value);
+                    formData.append('randomSeed', randomSeed.value);
 
                     try {
                         // 假设后端有对应的接口
@@ -381,7 +414,7 @@
                     rainPatternTasks,
                     rainIntensity,
                     rainDirection,
-                    latentVariable,
+                    randomSeed,
                     rainPatternPreviewDialogVisible,
                     rainPatternPreviewImageUrl,
                     rainPatternPreviewDialogTitle,
