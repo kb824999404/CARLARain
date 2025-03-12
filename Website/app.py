@@ -8,6 +8,10 @@ from datetime import datetime
 import random
 from PIL import Image, ImageDraw
 
+import sys
+sys.path.append("../HRIGNet")
+from predict_module import predict_from_bg_mask
+
 # from your_model_module import HRIGNet  # 替换为你的模型模块
 
 app = Flask(__name__)
@@ -31,12 +35,17 @@ TASK_STATUS = {
 def index():
     return send_from_directory('static', 'index.html')
 
-def generate_rain_image(task_id, background_path, rain_path):
+@app.route('/imgs/<path:filename>', methods=['GET'])
+def imgs(filename):
+    return send_from_directory('static/imgs', filename)
+
+def generate_rainy_image(task_id, background_path, rain_path, steps, use_lighten, use_blend):
     """在后台线程中生成雨景图像"""
     try:
         output_path = os.path.join(app.config['HRIG_FOLDER'], task_id, 'output.png')
-        # model.generate_rain_image(background_path, rain_path, output_path)
         print("Generating Rainy Image...")
+        print(f"Steps:{steps}\tUse Lighten:{use_lighten}\tUse Blend:{use_blend}")
+        predict_from_bg_mask(background_path,rain_path,output_path, steps, use_lighten, use_blend)
         update_task_status(task_id, TASK_STATUS["COMPLETED"], is_rain_pattern=False)
     except Exception as e:
         print(f"Task {task_id} failed: {e}")
@@ -63,6 +72,17 @@ def upload_files():
     
     background_file = request.files['background']
     rain_file = request.files['rain']
+    use_lighten = request.form['use_lighten']
+    use_blend = request.form['use_blend']
+    steps = int(request.form['steps'])
+    if use_lighten == 'false':
+        use_lighten = False
+    else:
+        use_lighten = True
+    if use_blend == 'false':
+        use_blend = False
+    else:
+        use_blend = True
     
     if background_file.filename == '' or rain_file.filename == '':
         return jsonify({"error": "No selected file"}), 400
@@ -89,7 +109,7 @@ def upload_files():
         json.dump(task_info, f)
     
     # 启动后台任务
-    threading.Thread(target=generate_rain_image, args=(task_id, background_path, rain_path)).start()
+    threading.Thread(target=generate_rainy_image, args=(task_id, background_path, rain_path, steps, use_lighten, use_blend)).start()
     
     return jsonify(task_info), 200
 
