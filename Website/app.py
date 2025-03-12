@@ -221,4 +221,4 @@ def get_task_image_rain(task_id, image_type):
     return send_file(image_path, mimetype='image/png')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=5088)

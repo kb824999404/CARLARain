@@ -96,6 +96,15 @@ CARLARain is an autonomous driving simulator framework that supports the simulat
   * `conda activate hrig`
   * `cd HRIGNet&&python predict_car.py -c../configs/seqTownsCombineTest.yaml`
 
+
+## Run Demo Website
+
+* `conda activate hrig`
+* `pip install flask`
+* `cd Website`
+* `python app.py`
+* Visit `http://127.0.0.1:5088`
+
 ## CARLARain Dataset
 
 Based on CARLARain, we constructed an autonomous driving rainy - scene image dataset. We utilized eight different built-in scenarios provided by CARLA and set the time to three periods: daytime, evening, and night, to simulate driving scenarios under different lighting conditions. In terms of vehicle and pedestrian simulation, 100 vehicles and 500 pedestrians were randomly placed in each scene. The resolution of the rendered images is 2048×1024.
