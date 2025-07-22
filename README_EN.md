@@ -12,7 +12,9 @@
 
 </div>
 
-CARLARain is an autonomous driving simulator framework that supports the simulation of rainy scenes in complex lighting environments. Based on [CARLA](https://github.com/carla-simulator/carla), it realizes the environmental simulation, vehicle simulation, and pedestrian simulation of driving scenarios. In combination with [HRIGNet](https://kb824999404.github.io/HRIG/) and [CRIGNet](https://doi.org/10.1007/978-981-97-5597-4_8), it introduces controllable and realistic rainy scene simulation in complex lighting environments. This framework can build a rich rainy scene simulation training environment for autonomous driving visual perception algorithms, covering diverse time periods and lighting conditions, and meeting the requirements of multiple tasks such as semantic segmentation, instance segmentation, depth estimation, and object detection in autonomous driving scenarios. 
+This is the repositories of the CARLARain in our paper "Learning from Rendering: Realistic and Controllable Extreme Rainy Image Synthesis for Autonomous Driving Simulation".
+
+CARLARain is an extreme rainy street scene simulator, which integrats our proposed [Learning-from-Rendering](https://kb824999404.github.io/HRIG/) rainy image synthesizer with the [CARLA](https://github.com/carla-simulator/carla) driving simulator and the [CRIGNet](https://doi.org/10.1007/978-981-97-5597-4_8). CARLARain can obtain paired rainy-clean images and labels under complex illumination conditions. CARLARain configures RGB camera, depth camera, semantic segmentation camera, instance segmentation camera, and collision detection sensor based on CARLA in the street scene simulation module. During simulation, CARLARain can obtain data in the street scene environment for each frame, including RGB images, semantic segmentation images, instance segmentation images, depth images, and object bounding boxes. 
 
 
 <div align="center">
@@ -29,7 +31,7 @@ CARLARain is an autonomous driving simulator framework that supports the simulat
 
 </div>
 
-## Structure
+## File Structure
 
 * `configs`：Configuration files
 * `CarRain`：CARLA client code, used to obtain the background RGB images, semantic segmentation maps, instance segmentation maps, depth maps, and object bounding boxes of CARLA simulations
@@ -105,13 +107,27 @@ CARLARain is an autonomous driving simulator framework that supports the simulat
 * `python app.py`
 * Visit `http://127.0.0.1:5088`
 
-## CARLARain Dataset
+## Learning-from-Rendering Rainy Image Synthesizer
 
-Based on CARLARain, we constructed an autonomous driving rainy - scene image dataset. We utilized eight different built-in scenarios provided by CARLA and set the time to three periods: daytime, evening, and night, to simulate driving scenarios under different lighting conditions. In terms of vehicle and pedestrian simulation, 100 vehicles and 500 pedestrians were randomly placed in each scene. The resolution of the rendered images is 2048×1024.
+To incorporate both controllability and realism into rainy image synthesis, we propose a Learning-from-Rendering rainy image synthesizer, which combines the benefits of realism and controllability. 
 
-This dataset includes eight different scenarios. Each scenario contains three time periods, and each time period consists of 1000 frames of samples. Each sample includes RGB images of clear autonomous driving scenes, semantic segmentation images, instance segmentation images, depth images, rain-streak images, rainy RGB images, and object bounding-box data. The dataset is divided into a training set and a test set according to the scenarios. The training set includes seven scenarios, and the test set includes one scenario.
+In the rendering stage, we propose a 3D rainy scene rendering pipeline to render realistic high-resolution paired rainy-clean images. In the learning stage, we train a **H**igh-resolution **R**ainy **I**mage **G**eneration Network (HRIGNet) to controllably generate extreme rainy images conditioned on clean images. HRIGNet is used for rainy image generation in the CARLARain, which allows CARLARain to produce paired extreme rainy-clean images and label data under complex illumination conditions.
 
-The dataset can be downloaded from [CARLARain-Dataset](https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi) (Extraction code: i4zi)
+* Get the codes for the rendering stage and the learning stage: [Github](https://github.com/kb824999404/HRIG)
+
+
+## High-resolution Rainy Image Dataset
+
+In the rendering stage, we create a High-resolution Rainy Image (HRI) dataset in the rendering stage of the proposed rainy image synthesizer. The HRI dataset comprises a total of 3,200 image pairs. Each image pair comprises a clean background image, a depth image, a rain layer mask image, and a rainy image. It contains three scenes: lane, citystreet and japanesestreet, with image resolutions of 2048 $\times$ 1024. We split the HRI dataset into train set and test set according to camera viewpoints.
+
+* Get the HRI dataset and the Blender scene files: [Hugging Face](https://huggingface.co/datasets/Ian824/High-Resolution-Rainy-Image), [Google Drive](https://drive.google.com/drive/folders/1MSS-iNaLxI05K_10pHMWYibrDJtMJngP?usp=sharing), [Baidu Cloud](https://pan.baidu.com/s/14G4fE8_7lswvod6OtIbOew?pwd=v9b2)(Extraction Code: v9b2)
+
+
+## ExtremeRain Dataset
+
+Based on CARLARain, we construct an extreme rainy street scene image dataset, ExtremeRain. This dataset contains 8 different street scenes and 3 illumination conditions: daytime, sunset, night. The rainy scenes feature a rain intensity ranging from 5 mm/h - 100 mm/h, covering extreme rainfalls under complex illumination conditions. The dataset contains comprehensive label information to meet the requirements of multi-task visual perception models, including semantic segmentation, instance segmentation, depth estimation, and object detection. We split the dataset into train set and test set according to different scenes.
+
+* Get the ExtremeRain dataset: [Baidu Cloud](https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi) (Extraction code: i4zi)
 
 <table>
 <tr>
