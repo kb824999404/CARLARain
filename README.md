@@ -1,7 +1,7 @@
 <div align="center">
 
 # CARLARain
-**A Rainy Autonomous Driving Simulator based on CARLA**
+**An Extreme Rainy Street Scene Simulator based on CARLA**
 
 ![](Docs/license.svg)
 
