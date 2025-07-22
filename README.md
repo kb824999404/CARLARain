@@ -95,6 +95,14 @@ CARLARain是一个支持复杂光照环境雨景模拟的自动驾驶模拟器�
   * `conda activate hrig`
   * `cd HRIGNet&&python predict_car.py -c ../configs/seqTownsCombineTest.yaml`
 
+## 运行Demo网页
+
+* `conda activate hrig`
+* `pip install flask`
+* `cd Website`
+* `flask run`
+* 访问`http://127.0.0.1:5088`
+
 ## CARLARain数据集
 
 基于CARLARain，我们构建了一个自动驾驶雨景图像数据集，利用了CARLA提供的8个不同的内置场景，并将时间分别设定为白天、傍晚和夜晚三个时间段，以模拟不同光照环境下的驾驶场景。在车辆和行人仿真方面，在每个场景中随机放置了100个车辆，500个行人。其中，渲染图像的分辨率皆为2048×1024。

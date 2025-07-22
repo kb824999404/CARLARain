@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,8 @@
     <script src="https://unpkg.com/vue@3"></script>
     <!-- 引入 Element Plus 的 JS -->
     <script src="https://unpkg.com/element-plus"></script>
+    <!-- 引入 Element Plus 图标库 -->
+    <script src="https://unpkg.com/@element-plus/icons-vue"></script>
     <!-- 引入 Axios -->
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <style>
@@ -18,6 +21,7 @@
             margin: 20px;
             background-color: #f5f7fa;
         }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -26,26 +30,32 @@
             border-radius: 8px;
             box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
         }
+
         .upload-section {
             margin-bottom: 20px;
         }
+
         .task-list {
             margin-top: 20px;
         }
+
         .refresh-button {
             margin-bottom: 20px;
         }
+
         .image-preview {
             max-width: 100%;
             max-height: 80vh;
             display: block;
             margin: 0 auto;
         }
+
         .param-item {
             margin-bottom: 15px;
         }
     </style>
 </head>
+
 <body>
     <div id="app">
         <div class="container">
@@ -53,7 +63,12 @@
             <!-- 标签页 -->
             <el-tabs v-model="activeTab" type="card">
                 <!-- 雨景图像生成标签页 -->
-                <el-tab-pane label="雨景图像生成" name="rainy-scene">
+                <el-tab-pane label="HRIGNet雨景图像生成" name="rainy-scene">
+                    <p>
+                        <el-link href="https://kb824999404.github.io/HRIG/" target="_blank">
+                            <el-button type="success">查看HRIGNet主页</el-button>
+                        </el-link>
+                    </p>
                     <!-- 上传数据和参数输入卡片 -->
                     <el-card class="upload-section">
                         <template #header>
@@ -64,28 +79,35 @@
 
                         <!-- 上传背景图像 -->
                         <label for="background-upload">上传背景图像：</label>
-                        <el-upload
-                            action="#"
-                            :auto-upload="false"
-                            :on-change="handleBackgroundChange"
-                            :limit="1"
-                            accept="image/*"
-                        >
+                        <el-popover placement="top-start" title="背景图像" :width="400" trigger="hover">
+                            <p>请上传大于512x512的图像，不足512大小会填充至512，大于512会分成512x512的图像块</p>
+                            <el-link href="./imgs/background.png" target="_blank">查看示例图片</el-link>
+                            <template #reference>
+                                <el-icon>
+                                    <More />
+                                </el-icon>
+                            </template>
+                        </el-popover>
+                        <el-upload action="#" :auto-upload="false" :on-change="handleBackgroundChange" :limit="1"
+                            accept="image/*">
                             <template #trigger>
                                 <el-button type="primary">上传背景图像</el-button>
                             </template>
                         </el-upload>
 
                         <!-- 上传雨纹图像 -->
-                        <label for="rain-upload" style="display: block; margin-top: 10px;">上传雨纹图像：</label>
-                        <el-upload
-                            action="#"
-                            :auto-upload="false"
-                            :on-change="handleRainChange"
-                            :limit="1"
-                            accept="image/*"
-                            style="margin-top: 10px;"
-                        >
+                        <label for="rain-upload">上传雨纹图像：</label>
+                        <el-popover placement="top-start" title="背景图像" :width="400" trigger="hover">
+                            <p>请上传大于512x512的图像，其他尺寸的图像会被缩放至512x512</p>
+                            <el-link href="./imgs/rain.png" target="_blank">查看示例图片</el-link>
+                            <template #reference>
+                                <el-icon>
+                                    <More />
+                                </el-icon>
+                            </template>
+                        </el-popover>
+                        <el-upload action="#" :auto-upload="false" :on-change="handleRainChange" :limit="1"
+                            accept="image/*" style="margin-top: 10px;">
                             <template #trigger>
                                 <el-button type="primary">上传雨纹图像</el-button>
                             </template>
@@ -94,15 +116,16 @@
                         <!-- 参数设置 -->
                         <label for="inference-steps">扩散模型推理步数：</label>
                         <div class="param-item">
-                            <el-input v-model="inferenceSteps" placeholder="请输入扩散模型推理步数" type="number" min="1"></el-input>
+                            <el-input v-model="inferenceSteps" placeholder="请输入扩散模型推理步数" type="number"
+                                min="1"></el-input>
                         </div>
 
                         <div class="param-item">
-                            <el-switch v-model="usePostProcessing" active-text="使用后处理（lighten）"></el-switch>
+                            <el-switch v-model="use_lighten" active-text="使用后处理（lighten）"></el-switch>
                         </div>
 
                         <div class="param-item">
-                            <el-switch v-model="blendBackground" active-text="混合背景图像和生成图像"></el-switch>
+                            <el-switch v-model="use_blend" active-text="混合背景图像和生成图像"></el-switch>
                         </div>
 
                         <!-- 提交按钮 -->
@@ -117,8 +140,10 @@
                             <el-table-column prop="created_at" label="创建时间" width="180"></el-table-column>
                             <el-table-column prop="status" label="状态" width="120">
                                 <template #default="{ row }">
-                                    <el-tag :type="row.status === 'completed' ? 'success' : row.status === 'pending' ? 'warning' : 'danger'">
-                                        {{ row.status === 'completed' ? '已完成' : row.status === 'pending' ? '进行中' : '失败' }}
+                                    <el-tag
+                                        :type="row.status === 'completed' ? 'success' : row.status === 'pending' ? 'warning' : 'danger'">
+                                        {{ row.status === 'completed' ? '已完成' : row.status === 'pending' ? '进行中' : '失败'
+                                        }}
                                     </el-tag>
                                 </template>
                             </el-table-column>
@@ -126,15 +151,23 @@
                                 <template #default="{ row }">
                                     <el-button @click="openPreviewDialog(row.task_id, 'background')">查看背景</el-button>
                                     <el-button @click="openPreviewDialog(row.task_id, 'rain')">查看雨纹</el-button>
-                                    <el-button v-if="row.status === 'completed'" @click="openPreviewDialog(row.task_id, 'output')" type="success">查看结果</el-button>
-                                    <el-button v-if="row.status === 'completed'" @click="downloadImage(row.task_id)" type="primary">下载结果</el-button>
+                                    <el-button v-if="row.status === 'completed'"
+                                        @click="openPreviewDialog(row.task_id, 'output')"
+                                        type="success">查看结果</el-button>
+                                    <el-button v-if="row.status === 'completed'" @click="downloadImage(row.task_id)"
+                                        type="primary">下载结果</el-button>
                                 </template>
                             </el-table-column>
                         </el-table>
                     </div>
                 </el-tab-pane>
                 <!-- 雨纹图像生成标签页 -->
-                <el-tab-pane label="雨纹图像生成" name="rain-pattern">
+                <el-tab-pane label="CRIGNet雨纹图像生成" name="rain-pattern">
+                    <p>
+                        <el-link href="https://doi.org/10.1007/978-981-97-5597-4_8" target="_blank">
+                            <el-button type="success">查看CRIGNet论文</el-button>
+                        </el-link>
+                    </p>
                     <!-- 上传数据和参数输入卡片 -->
                     <el-card class="upload-section">
                         <template #header>
@@ -144,25 +177,28 @@
                         </template>
 
                         <!-- 雨强度输入 -->
-                        <label for="rain-intensity">雨强度 (-1 - 1)：</label>
+                        <label for="rain-intensity">雨强度 [0,1]：</label>
                         <div class="param-item">
-                            <el-input v-model="rainIntensity" placeholder="请输入雨强度" type="number" min="-1" max="1"></el-input>
+                            <el-input v-model="rainIntensity" placeholder="请输入雨强度" type="number" min="0" max="1"
+                                step="0.01"></el-input>
                         </div>
 
                         <!-- 方向输入 -->
-                        <label for="rain-direction">方向 (-1 - 1)：</label>
+                        <label for="rain-direction">方向 [0,1]：</label>
                         <div class="param-item">
-                            <el-input v-model="rainDirection" placeholder="请输入方向" type="number" min="-1" max="1"></el-input>
+                            <el-input v-model="rainDirection" placeholder="请输入方向" type="number" min="0" max="1"
+                                step="0.01"></el-input>
                         </div>
 
                         <!-- 潜在变量输入 -->
-                        <label for="latent-variable">潜在变量 (-1 - 1)：</label>
+                        <label for="seed">随机种子(用于生成隐变量)：</label>
                         <div class="param-item">
-                            <el-input v-model="latentVariable" placeholder="请输入潜在变量" type="number" min="-1" max="1"></el-input>
+                            <el-input v-model="randomSeed" placeholder="请输入随机种子" type="number"></el-input>
                         </div>
 
                         <!-- 提交按钮 -->
-                        <el-button type="success" @click="generateRainPattern" style="margin-top: 10px;">生成雨纹图像</el-button>
+                        <el-button type="success" @click="generateRainPattern"
+                            style="margin-top: 10px;">生成雨纹图像</el-button>
                     </el-card>
 
                     <!-- 任务列表 -->
@@ -173,19 +209,35 @@
                             <el-table-column prop="created_at" label="创建时间" width="180"></el-table-column>
                             <el-table-column prop="status" label="状态" width="120">
                                 <template #default="{ row }">
-                                    <el-tag :type="row.status === 'completed' ? 'success' : row.status === 'pending' ? 'warning' : 'danger'">
-                                        {{ row.status === 'completed' ? '已完成' : row.status === 'pending' ? '进行中' : '失败' }}
+                                    <el-tag
+                                        :type="row.status === 'completed' ? 'success' : row.status === 'pending' ? 'warning' : 'danger'">
+                                        {{ row.status === 'completed' ? '已完成' : row.status === 'pending' ? '进行中' : '失败'
+                                        }}
                                     </el-tag>
                                 </template>
                             </el-table-column>
                             <el-table-column label="操作">
                                 <template #default="{ row }">
-                                    <el-button v-if="row.status === 'completed'" @click="openRainPatternPreviewDialog(row.task_id, 'output')" type="success">查看结果</el-button>
-                                    <el-button v-if="row.status === 'completed'" @click="downloadRainPatternImage(row.task_id)" type="primary">下载结果</el-button>
+                                    <el-button v-if="row.status === 'completed'"
+                                        @click="openRainPatternPreviewDialog(row.task_id, 'output')"
+                                        type="success">查看结果</el-button>
+                                    <el-button v-if="row.status === 'completed'"
+                                        @click="downloadRainPatternImage(row.task_id)" type="primary">下载结果</el-button>
                                 </template>
                             </el-table-column>
                         </el-table>
                     </div>
+                </el-tab-pane>
+                <el-tab-pane label="CARLARain" name="carlarain">
+                    <p>
+                        <el-link href="https://github.com/kb824999404/CARLARain" target="_blank">
+                            <el-button type="success">查看CARLARain主页</el-button>
+                        </el-link>
+                    </p>
+                    <p>
+                        CARLARain是一个支持复杂光照环境雨景模拟的自动驾驶模拟器框架，基于CARLA实现了驾驶场景的 环境仿真、车辆仿真和行人仿真，并结合HRIGNet和CRIGNet，引入了复杂光照环境下可控且逼真的雨景模拟。该框架可为自动驾驶视觉感知算法构建丰富的雨景仿真训练环境，涵盖多样的时间段和光照条件，满足自动驾驶场景下的语义分割、实例分割、深度估计和目标检测等多个任务的需求。
+                    </p>
+                    <img src="./imgs/CARLARain.svg" style="width: 80%;" />
                 </el-tab-pane>
             </el-tabs>
         </div>
@@ -205,7 +257,7 @@
         const { createApp, ref, onMounted } = Vue;
         const { ElMessage } = ElementPlus; // 引入 ElMessage
 
-        createApp({
+        const app = createApp({
             setup() {
                 // 雨景图像生成相关
                 const tasks = ref([]);
@@ -215,14 +267,14 @@
                 const previewImageUrl = ref("");
                 const previewDialogTitle = ref("");
                 const inferenceSteps = ref(50); // 默认推理步数
-                const usePostProcessing = ref(false); // 是否使用后处理
-                const blendBackground = ref(false); // 是否混合背景图像和生成图像
+                const use_lighten = ref(false); // 是否使用后处理
+                const use_blend = ref(true); // 是否混合背景图像和生成图像
 
                 // 雨纹图像生成相关
                 const rainPatternTasks = ref([]);
-                const rainIntensity = ref(0); // 雨强度
-                const rainDirection = ref(0); // 方向
-                const latentVariable = ref(0); // 潜在变量
+                const rainIntensity = ref(0.5); // 雨强度
+                const rainDirection = ref(0.5); // 方向
+                const randomSeed = ref(123); // 随机种子
                 const rainPatternPreviewDialogVisible = ref(false);
                 const rainPatternPreviewImageUrl = ref("");
                 const rainPatternPreviewDialogTitle = ref("");
@@ -232,7 +284,14 @@
                 const fetchTasks = async () => {
                     try {
                         const response = await axios.get('/tasks');
-                        tasks.value = response.data;
+                        // 对 response.data 按 created_at 排序
+                        const sortedTasks = response.data.sort((a, b) => {
+                            // 将 created_at 转换为 Date 对象进行比较
+                            const dateA = new Date(a.created_at);
+                            const dateB = new Date(b.created_at);
+                            return dateA - dateB; // 升序排序
+                        });
+                        tasks.value = sortedTasks;
                         ElMessage.success("任务列表刷新成功！");
                     } catch (error) {
                         console.error("获取任务列表失败：", error);
@@ -257,9 +316,9 @@
                     const formData = new FormData();
                     formData.append('background', backgroundFile.value);
                     formData.append('rain', rainFile.value);
-                    formData.append('inference_steps', inferenceSteps.value);
-                    formData.append('use_post_processing', usePostProcessing.value);
-                    formData.append('blend_background', blendBackground.value);
+                    formData.append('steps', inferenceSteps.value);
+                    formData.append('use_lighten', use_lighten.value);
+                    formData.append('use_blend', use_blend.value);
 
                     try {
                         const response = await axios.post('/upload', formData, {
@@ -286,9 +345,15 @@
                 // 雨纹图像生成相关方法
                 const fetchRainPatternTasks = async () => {
                     try {
-                        // 假设后端有对应的接口
                         const response = await axios.get('/rain_pattern_tasks');
-                        rainPatternTasks.value = response.data;
+                        // 对 response.data 按 created_at 排序
+                        const sortedTasks = response.data.sort((a, b) => {
+                            // 将 created_at 转换为 Date 对象进行比较
+                            const dateA = new Date(a.created_at);
+                            const dateB = new Date(b.created_at);
+                            return dateA - dateB; // 升序排序
+                        });
+                        rainPatternTasks.value = sortedTasks;
                         ElMessage.success("雨纹图像任务列表刷新成功！");
                     } catch (error) {
                         console.error("获取雨纹图像任务列表失败：", error);
@@ -300,7 +365,7 @@
                     const formData = new FormData();
                     formData.append('rain_intensity', rainIntensity.value);
                     formData.append('rain_direction', rainDirection.value);
-                    formData.append('latent_variable', latentVariable.value);
+                    formData.append('randomSeed', randomSeed.value);
 
                     try {
                         // 假设后端有对应的接口
@@ -338,8 +403,8 @@
                     previewImageUrl,
                     previewDialogTitle,
                     inferenceSteps,
-                    usePostProcessing,
-                    blendBackground,
+                    use_lighten,
+                    use_blend,
                     fetchTasks,
                     handleBackgroundChange,
                     handleRainChange,
@@ -349,7 +414,7 @@
                     rainPatternTasks,
                     rainIntensity,
                     rainDirection,
-                    latentVariable,
+                    randomSeed,
                     rainPatternPreviewDialogVisible,
                     rainPatternPreviewImageUrl,
                     rainPatternPreviewDialogTitle,
@@ -360,7 +425,11 @@
                     downloadRainPatternImage
                 };
             }
-        }).use(ElementPlus).mount('#app');
+        })
+        app.component('More', ElementPlusIconsVue.More) // 注册图标组件
+        app.use(ElementPlus)
+        app.mount('#app');
     </script>
 </body>
+
 </html>

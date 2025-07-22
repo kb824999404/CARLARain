@@ -8,7 +8,9 @@ from datetime import datetime
 import random
 from PIL import Image, ImageDraw
 
-# from your_model_module import HRIGNet  # 替换为你的模型模块
+import sys
+
+
 
 app = Flask(__name__)
 CORS(app)  # 允许跨域请求
@@ -31,12 +33,19 @@ TASK_STATUS = {
 def index():
     return send_from_directory('static', 'index.html')
 
-def generate_rain_image(task_id, background_path, rain_path):
+@app.route('/imgs/<path:filename>', methods=['GET'])
+def imgs(filename):
+    return send_from_directory('static/imgs', filename)
+
+def generate_rainy_image(task_id, background_path, rain_path, steps, use_lighten, use_blend):
     """在后台线程中生成雨景图像"""
+    sys.path.append("../HRIGNet")
+    from hrig_predict_module import predict_from_bg_mask
     try:
         output_path = os.path.join(app.config['HRIG_FOLDER'], task_id, 'output.png')
-        # model.generate_rain_image(background_path, rain_path, output_path)
         print("Generating Rainy Image...")
+        print(f"Steps:{steps}\tUse Lighten:{use_lighten}\tUse Blend:{use_blend}")
+        predict_from_bg_mask(background_path,rain_path,output_path, steps, use_lighten, use_blend)
         update_task_status(task_id, TASK_STATUS["COMPLETED"], is_rain_pattern=False)
     except Exception as e:
         print(f"Task {task_id} failed: {e}")
@@ -63,6 +72,17 @@ def upload_files():
     
     background_file = request.files['background']
     rain_file = request.files['rain']
+    use_lighten = request.form['use_lighten']
+    use_blend = request.form['use_blend']
+    steps = int(request.form['steps'])
+    if use_lighten == 'false':
+        use_lighten = False
+    else:
+        use_lighten = True
+    if use_blend == 'false':
+        use_blend = False
+    else:
+        use_blend = True
     
     if background_file.filename == '' or rain_file.filename == '':
         return jsonify({"error": "No selected file"}), 400
@@ -89,7 +109,7 @@ def upload_files():
         json.dump(task_info, f)
     
     # 启动后台任务
-    threading.Thread(target=generate_rain_image, args=(task_id, background_path, rain_path)).start()
+    threading.Thread(target=generate_rainy_image, args=(task_id, background_path, rain_path, steps, use_lighten, use_blend)).start()
     
     return jsonify(task_info), 200
 
@@ -124,38 +144,50 @@ def get_task_image(task_id, image_type):
     
     return send_file(image_path, mimetype='image/png')
 
-# 新增接口：生成雨纹图像
+def generate_rain_image(task_id,intensity,direction,randomSeed):
+    """在后台线程中生成雨纹图像"""
+    sys.path.append("../CRIGNet")
+    from crig_predict_module import predict_rain_from_zero
+    try:
+        output_path = os.path.join(app.config['CRIG_FOLDER'], task_id, 'output.png')
+        print("Generating Rain Image...")
+        print(f"Intensity:{intensity}\tDirection:{direction}\tSeed:{randomSeed}")
+        predict_rain_from_zero(output_path,intensity,direction,randomSeed)
+        update_task_status(task_id, TASK_STATUS["COMPLETED"], is_rain_pattern=True)
+    except Exception as e:
+        print(f"Task {task_id} failed: {e}")
+        update_task_status(task_id, TASK_STATUS["FAILED"], is_rain_pattern=True)
+
+# 生成雨纹图像
 @app.route('/generate_rain_pattern', methods=['POST'])
 def generate_rain_pattern():
     """生成雨纹图像"""
-    try:
-        # 获取请求参数
-        rain_intensity = request.form.get('rain_intensity')
-        rain_direction = request.form.get('rain_direction')
-        latent_variable = request.form.get('latent_variable')
-        
+    # 获取请求参数
+    intensity = float(request.form.get('rain_intensity'))
+    direction = float(request.form.get('rain_direction'))
+    randomSeed = int(request.form.get('randomSeed'))
+    
 
-        # 创建任务文件夹
-        task_id = str(uuid.uuid4())
-        task_folder = os.path.join(app.config['CRIG_FOLDER'], task_id)
-        os.makedirs(task_folder, exist_ok=True)
+    # 创建任务文件夹
+    task_id = str(uuid.uuid4())
+    task_folder = os.path.join(app.config['CRIG_FOLDER'], task_id)
+    os.makedirs(task_folder, exist_ok=True)
 
-        # 生成雨纹图像的逻辑（这里只是示例，实际需要实现具体的生成算法）
+    # 创建任务信息
+    task_info = {
+        "task_id": task_id,
+        "task_name": f"Rain Pattern Task {task_id[:8]}",
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "status": TASK_STATUS["PENDING"]
+    }
+    with open(os.path.join(task_folder, 'task_info.json'), 'w') as f:
+        json.dump(task_info, f)
 
-        # 创建任务信息
-        task_info = {
-            "task_id": task_id,
-            "task_name": f"Rain Pattern Task {task_id[:8]}",
-            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "status": TASK_STATUS["COMPLETED"]
-        }
-        with open(os.path.join(task_folder, 'task_info.json'), 'w') as f:
-            json.dump(task_info, f)
+    # 启动后台任务
+    threading.Thread(target=generate_rain_image, args=(task_id,intensity,direction,randomSeed)).start()
 
-        return jsonify(task_info), 200
-    except Exception as e:
-        print(f"Generate rain pattern failed: {e}")
-        return jsonify({"error": "Failed to generate rain pattern"}), 500
+    return jsonify(task_info), 200
+
 
 # 新增接口：获取所有雨纹图像生成任务
 @app.route('/rain_pattern_tasks', methods=['GET'])
@@ -173,5 +205,20 @@ def get_rain_pattern_tasks():
                     rain_pattern_tasks.append(task_info)
     return jsonify(rain_pattern_tasks), 200
 
+
+@app.route('/rain_pattern_tasks/<task_id>/image/<image_type>', methods=['GET'])
+def get_task_image_rain(task_id, image_type):
+    """获取任务图像（上传的图像或生成的图像）"""
+    task_folder = os.path.join(app.config['CRIG_FOLDER'], task_id)
+    if image_type == 'output':
+        image_path = os.path.join(task_folder, 'output.png')
+    else:
+        return jsonify({"error": "Invalid image type"}), 400
+    
+    if not os.path.exists(image_path):
+        return jsonify({"error": "Image not found"}), 404
+    
+    return send_file(image_path, mimetype='image/png')
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=5088)
