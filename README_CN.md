@@ -6,20 +6,18 @@
 ![](Docs/license.svg)
 
 <div>
-  <a href="./README.md">中文</a> |
-  <a href="./README_EN.md">English</a>
+  <a href="./README.md">English</a> |
+  <a href="./README_CN.md">中文</a>
 </div>
 
 </div>
 
-This is the repositories of the CARLARain in our paper "Learning from Rendering: Realistic and Controllable Extreme Rainy Image Synthesis for Autonomous Driving Simulation".
-
-CARLARain is an extreme rainy street scene simulator, which integrats our proposed [Learning-from-Rendering](https://kb824999404.github.io/HRIG/) rainy image synthesizer with the [CARLA](https://github.com/carla-simulator/carla) driving simulator and the [CRIGNet](https://doi.org/10.1007/978-981-97-5597-4_8). CARLARain can obtain paired rainy-clean images and labels under complex illumination conditions. CARLARain configures RGB camera, depth camera, semantic segmentation camera, instance segmentation camera, and collision detection sensor based on CARLA in the street scene simulation module. During simulation, CARLARain can obtain data in the street scene environment for each frame, including RGB images, semantic segmentation images, instance segmentation images, depth images, and object bounding boxes. 
+CARLARain是一个支持复杂光照环境雨景模拟的自动驾驶模拟器框架，基于[CARLA](https://github.com/carla-simulator/carla)实现了驾驶场景的 环境仿真、车辆仿真和行人仿真，并结合[HRIGNet](https://kb824999404.github.io/HRIG/)和[CRIGNet](https://doi.org/10.1007/978-981-97-5597-4_8)，引入了复杂光照环境下可控且逼真的雨景模拟。该框架可为自动驾驶视觉感知算法构建丰富的雨景仿真训练环境，涵盖多样的时间段和光照条件，满足自动驾驶场景下的语义分割、实例分割、深度估计和目标检测等多个任务的需求。
 
 
 <div align="center">
 
-![](Docs/CARLARain图EN.svg)
+![](Docs/CARLARain图.svg)
 
 
 <table>
@@ -31,123 +29,106 @@ CARLARain is an extreme rainy street scene simulator, which integrats our propos
 
 </div>
 
-## File Structure
+## 目录结构
 
-* `configs`：Configuration files
-* `CarRain`：CARLA client code, used to obtain the background RGB images, semantic segmentation maps, instance segmentation maps, depth maps, and object bounding boxes of CARLA simulations
-* `CRIGNet`：CRIGNet code, used to generate low-resolution rain streak images
-* `RainControlNet`：RainControlNet code, used to expand low-resolution rain streak images into high-resolution rain streak images
-* `HRIGNet`：HRIGNet code, used to generate rainy scene images based on background RGB images and rain streak images
-* `data`：Output data path
+* `configs`：配置文件
+* `CarRain`：CARLA客户端代码，用于获取CARLA模拟的背景RGB图、语义分割图、实例分割图、深度图和物体边界框
+* `CRIGNet`：CRIGNet代码，用于生成低分辨率雨纹图像
+* `RainControlNet`：RainControlNet代码，用于将低分辨率雨纹图像扩大为高分辨率雨纹图像
+* `HRIGNet`：HRIGNet代码，根据背景RGB图像和雨纹图像生成雨景图像
+* `data`：输出数据路径
 
+## 使用方法
 
-## How to run
+### 配置环境
 
-### Environment Setup
+* CARLA：[下载CARLA服务器](https://carla.readthedocs.io/en/latest/start_quickstart/#carla-installation)，新建`carla`conda环境并[配置CARLA client library](https://carla.readthedocs.io/en/latest/start_quickstart/#install-client-library)
+* ControlNet：`cd RainControlNet && conda env create -f environment.yaml`
+* HRIGNet：`cd HRIGNet && conda env create -f environment.yaml`
 
-* CARLA: [Download the CARLA server](https://carla.readthedocs.io/en/latest/start_quickstart/#carla-installation), create a new `carla` conda environment and [configure the CARLA client library](https://carla.readthedocs.io/en/latest/start_quickstart/#install-client-library).
-* ControlNet: `cd RainControlNet && conda env create -f environment.yaml`
-* HRIGNet: `cd HRIGNet && conda env create -f environment.yaml`
+### 准备模型权重
 
+* 所有模型权重文件可在此获得：[BaiduCloud](https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi ) (提取码：i4zi)
+* CRIGNet模型权重：下载`CRIGNet/00000-crig_fastgan_g1w0.5_rainTrainL_256-FastGAN`并解压至`CRIGNet/log_raintrainl_256`
+* RainControlNet模型权重：下载`RainControlNet/crig_hint256-128_out512_4xgrad_1e-4-2024-10-05-T07-21-55`并解压至`RainControlNet/logs`
+* HRIGNet模型权重：下载`HRIGNet/2023-10-19T19-31-52_blender-gdm-rainlayer-hw512-f4-em3`和`2023-10-21T21-50-57_blender-hrig-rainlayer+masked-gdm512-hw512-hybrid-unet128-em3`并解压至`HRIGNet/logs`
 
-### Prepare Model Weights
+### 准备yaml配置文件
 
-* All model weight files can be obtained here: [BaiduCloud](https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi ) (Extraction code: i4zi)
-* CRIGNet model weights: Download `CRIGNet/00000-crig_fastgan_g1w0.5_rainTrainL_256-FastGAN` and extract it to `CRIGNet/log_raintrainl_256`
-* RainControlNet model weights: Download `RainControlNet/crig_hint256-128_out512_4xgrad_1e-4-2024-10-05-T07-21-55` and extract it to `RainControlNet/logs`
-* HRIGNet model weights: Download `HRIGNet/2023-10-19T19-31-52_blender-gdm-rainlayer-hw512-f4-em3` and `2023-10-21T21-50-57_blender-hrig-rainlayer+masked-gdm512-hw512-hybrid-unet128-em3` and extract them to `HRIGNet/logs`
+* 参考`configs/seqTest.yaml`，具体内容解释见[Docs/config.md](Docs/config.md)
 
-### Prepare YAML Configuration Files
+### 运行
 
-* Refer to `configs/seqTest.yaml`, and for detailed explanations of the content, see [Docs/config.md](./Docs/config.md#EN)
+#### 1. 获取背景图像和标签数据
 
-### Run
+* 运行CARLA server：
+  * 在CARLA目录下执行`./CarlaUE4.sh -RenderOffScreen -quality-level=Epic`
+  * 配置`CarRain/config.py`中的`serverIP`和`serverPort`
 
-#### 1. Obtain Background Images and Label Data
+* 激活conda环境：`conda activate carla`
+* 运行CARLA client，获取背景RGB图、语义分割图、实例分割图、深度图和物体边界框：`python CarRain/main.py -c configs/seqTest.yaml`
+* 获取目标检测数据：`python CarRain/isToDetect.py -c configs/seqTest.yaml`
+* 获取视频：`python CarRain/seqToVideo.py -c configs/seqTest.yaml`
 
-* Run the CARLA server:
-  * In the CARLA directory, execute `./CarlaUE4.sh -RenderOffScreen -quality-level=Epic`
-  * Configure `serverIP` and `serverPort` in `CarRain/config.py`
+#### 2. 获取雨纹图像
 
-* Activate the conda environment: `conda activate carla`
-* Run the CARLA client to obtain background RGB images, semantic segmentation maps, instance segmentation maps, depth maps, and object bounding boxes: `python CarRain/main.py -c configs/seqTest.yaml`
-* Obtain object detection data: `python CarRain/isToDetect.py -c configs/seqTest.yaml`
-* Obtain videos: `python CarRain/seqToVideo.py -c configs/seqTest.yaml`
+> 可选择用现有方法获取雨纹图像作为雨层遮罩，也可用此处提供的CRIGNet+RainControlNet生成雨纹图像
 
-#### 2. Obtain Rain Streak Images
+1. **现有方法：**
 
-> You can choose to obtain rain streak images as rain layer masks using existing methods, or generate rain streak images using CRIGNet + RainControlNet provided here.
-
-1. **Existing methods**:
    * weather-particle-simulator：https://github.com/astra-vision/weather-particle-simulator
-   * Download [RainMask](https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi ), select the rain streak images with the desired resolution and intensity, and place them in`data/rain`
+   * 下载[RainMask](https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi )，选择所需分辨率和强度的雨纹图像，将其置于`data/rain`中
 
+2. **CRIGNet+RainControlNet：**
 
-2. **CRIGNet + RainControlNet**:
-   * Use CRIGNet to obtain low-resolution rain streak images:
+   * 用CRIGNet获取低分辨率雨纹图像：
      * `conda activate hrig`
-     * `cd CRIGNet&&python gen_rain_mask.py -c../configs/seqTest.yaml&&cd..`
+     * `cd CRIGNet&&python gen_rain_mask.py -c ../configs/seqTest.yaml&&cd ..`
 
-   * Use RainControlNet to obtain high-resolution rain streak images:
+   * 用RainControlNet获取高分辨率雨纹图像：
      * `conda activate control`
-     * `cd RainControlNet&&python upscale_rain_mask.py -c../configs/seqTest.yaml&&cd..`
+     * `cd RainControlNet&&python upscale_rain_mask.py -c ../configs/seqTest.yaml&&cd ..`
 
-#### 3. Obtain Rainy Images
+#### 3. 获取雨景图像
 
-* Use HRIGNet to obtain rainy images:
+* 用HRIGNet获取雨景图像：
   * `conda activate hrig`
-  * `cd HRIGNet&&python predict_car.py -c../configs/seqTownsCombineTest.yaml`
+  * `cd HRIGNet&&python predict_car.py -c ../configs/seqTownsCombineTest.yaml`
 
-
-## Run Demo Website
+## 运行Demo网页
 
 * `conda activate hrig`
 * `pip install flask`
 * `cd Website`
-* `python app.py`
-* Visit `http://127.0.0.1:5088`
+* `flask run`
+* 访问`http://127.0.0.1:5088`
 
-## Learning-from-Rendering Rainy Image Synthesizer
+## CARLARain数据集
 
-To incorporate both controllability and realism into rainy image synthesis, we propose a Learning-from-Rendering rainy image synthesizer, which combines the benefits of realism and controllability. 
+基于CARLARain，我们构建了一个自动驾驶雨景图像数据集，利用了CARLA提供的8个不同的内置场景，并将时间分别设定为白天、傍晚和夜晚三个时间段，以模拟不同光照环境下的驾驶场景。在车辆和行人仿真方面，在每个场景中随机放置了100个车辆，500个行人。其中，渲染图像的分辨率皆为2048×1024。
+该数据集包括8个不同场景，每个场景包括3个时间段，每个时间段包括1000帧的样本，每个样本包括自动驾驶清晰场景RGB图像、语义分割图像、实例分割图像、深度图像、雨纹图像、雨景RGB图像和物体边界框数据。根据场景将该数据集划分为训练集和测试集，训练集包括7个场景，测试集包括1个场景。
 
-In the rendering stage, we propose a 3D rainy scene rendering pipeline to render realistic high-resolution paired rainy-clean images. In the learning stage, we train a **H**igh-resolution **R**ainy **I**mage **G**eneration Network (HRIGNet) to controllably generate extreme rainy images conditioned on clean images. HRIGNet is used for rainy image generation in the CARLARain, which allows CARLARain to produce paired extreme rainy-clean images and label data under complex illumination conditions.
-
-* Get the codes for the rendering stage and the learning stage: [Github](https://github.com/kb824999404/HRIG)
-
-
-## High-resolution Rainy Image Dataset
-
-In the rendering stage, we create a High-resolution Rainy Image (HRI) dataset in the rendering stage of the proposed rainy image synthesizer. The HRI dataset comprises a total of 3,200 image pairs. Each image pair comprises a clean background image, a depth image, a rain layer mask image, and a rainy image. It contains three scenes: lane, citystreet and japanesestreet, with image resolutions of 2048 $\times$ 1024. We split the HRI dataset into train set and test set according to camera viewpoints.
-
-* Get the HRI dataset and the Blender scene files: [Hugging Face](https://huggingface.co/datasets/Ian824/High-Resolution-Rainy-Image), [Google Drive](https://drive.google.com/drive/folders/1MSS-iNaLxI05K_10pHMWYibrDJtMJngP?usp=sharing), [Baidu Cloud](https://pan.baidu.com/s/14G4fE8_7lswvod6OtIbOew?pwd=v9b2)(Extraction Code: v9b2)
-
-
-## ExtremeRain Dataset
-
-Based on CARLARain, we construct an extreme rainy street scene image dataset, ExtremeRain. This dataset contains 8 different street scenes and 3 illumination conditions: daytime, sunset, night. The rainy scenes feature a rain intensity ranging from 5 mm/h - 100 mm/h, covering extreme rainfalls under complex illumination conditions. The dataset contains comprehensive label information to meet the requirements of multi-task visual perception models, including semantic segmentation, instance segmentation, depth estimation, and object detection. We split the dataset into train set and test set according to different scenes.
-
-* Get the ExtremeRain dataset: [Baidu Cloud](https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi) (Extraction code: i4zi)
+数据集可在[CARLARain-Dataset](https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi)获得(提取码：i4zi)
 
 <table>
 <tr>
-<th>Dataset Type </th>
-<th>Scene </th>
-<th>Time </th>
-<th>Frame </th>
-<th>Sample Count </th>
-<th>Image Type </th>
+<th>数据集类型 </th>
+<th>场景 </th>
+<th>时间段 </th>
+<th>帧数 </th>
+<th>样本数 </th>
+<th>图像类型 </th>
 </tr>
 <tr>
-<td>Trainset</td>
+<td>训练集</td>
 <td>7</td>
 <td>3</td>
 <td>1000</td>
 <td>21000</td>
-<td rowspan=2> Scene RGB image, semantic segmentation image, instance segmentation image, depth image, rain streak image, rainy RGB image, object bounding box</td>
+<td rowspan=2>场景RGB图像、语义分割图像、实例分割图像、深度图像、雨纹图像、 雨景RGB图像、物体边界框</td>
 </tr>
 <tr>
-<td>Testset</td>
+<td>测试集</td>
 <td>1</td>
 <td>3</td>
 <td>1000</td>
@@ -157,11 +138,11 @@ Based on CARLARain, we construct an extreme rainy street scene image dataset, Ex
 
 <table>
 <tr>
-<th>Background </th>
-<th>Rainy </th>
-<th>Depth </th>
-<th>Semantic Segmentation </th>
-<th>Instance Segmentation </th>
+<th>背景 </th>
+<th>雨景 </th>
+<th>深度估计 </th>
+<th>语义分割 </th>
+<th>实例分割 </th>
 </tr>
 <tr>
 <td style="padding: 0;width=20%;"><img src="Docs/CARLARainDataset/background/seqTown01ClearSunset_002423..jpg" /></td>
@@ -315,11 +296,11 @@ Based on CARLARain, we construct an extreme rainy street scene image dataset, Ex
 </table>
 
 
-## License
+## 许可证
 
-The CARLARain code is distributed under the MIT License.
+CARLARain 代码在 MIT 许可证下分发。
 
-## Reference
+## 参考
 
 * CARLA：https://github.com/carla-simulator/carla
 * HRIGNet：https://kb824999404.github.io/HRIG/
