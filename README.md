@@ -373,6 +373,42 @@ Based on CARLARain, we construct an extreme rainy street scene image dataset, Ex
 
 </table>
 
+## Experiment - Realism And Controllability Of Rainy Image Generation
+
+* **Compare with baseline:** To evaluate the performance of HRIGNet in high-resolution rainy image generation, we compare it with several baseline image generative models: LDM, DiT and CycleGAN. The figure below illustrates a comparison of rainy image generation results of these methods.
+
+<table>
+<tr>
+<td style="padding: 0;width=30%;"><img src="Docs/HRIG_Baseline/Background_draw2.jpg" /></td>
+<td style="padding: 0;width=30%;"><img src="Docs/HRIG_Baseline/LDM_draw2.jpg" /></td>
+<td style="padding: 0;width=30%;"><img src="Docs/HRIG_Baseline/DiT_draw2.jpg" /></td>
+</tr>
+<tr>
+<td style="padding: 0;width=30%;text-align:center;">Background</td>
+<td style="padding: 0;width=30%;text-align:center;">LDM</td>
+<td style="padding: 0;width=30%;text-align:center;">DiT</td>
+</tr>
+<tr>
+<td style="padding: 0;width=30%;"><img src="Docs/HRIG_Baseline/Rainy_draw2.jpg" /></td>
+<td style="padding: 0;width=30%;"><img src="Docs/HRIG_Baseline/CycleGAN_draw2.jpg" /></td>
+<td style="padding: 0;width=30%;"><img src="Docs/HRIG_Baseline/HRIG_draw2.jpg" /></td>
+</tr>
+<tr>
+<td style="padding: 0;width=30%;text-align:center;">Ground truth</td>
+<td style="padding: 0;width=30%;text-align:center;">CycleGAN</td>
+<td style="padding: 0;width=30%;text-align:center;">HRIGNet(ours)</td>
+</tr>
+</table>
+
+* **Controlibility:** As shown in the figure below, some rainy images from ExtremeRain are presented. It is possible to control different background scenes, achieve variations in illumination such as daytime, sunset, and night, and control attributes like rain intensity and direction. The controllability of multiple attributes ensures the diversity of the dataset.
+
+![](Docs/RainControlibility.svg)
+
+## Experiment - Semantic Segmentation In Extreme Rainfall
+
+* To improve the accuracy of semantic segmentation models in extreme rainy scenes, we conduct augmented training with the ExtremeRain dataset and evaluate several SOTA semantic segmentation models on real datasets. We collect real rainy scene images with different illumination conditions from the Internet, and use them as the test set.
+
+![](Docs/augmented_semantic_test_on_real.svg)
 
 ## License
 
