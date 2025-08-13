@@ -6,7 +6,8 @@
   <a href="https://kb824999404.github.io/HRIG/">Page</a> |
   <a href="https://arxiv.org/abs/2502.16421">Arxiv</a> |
   Code(<a href="https://github.com/kb824999404/HRIG">Learning-from-Rendering</a>, <a href="https://github.com/kb824999404/CARLARain">CARLARain</a>) |
-  Dataset(<a href="https://huggingface.co/datasets/Ian824/High-Resolution-Rainy-Image">HRI</a>, <a href="https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi">ExtremeRain</a>)
+  Dataset(<a href="https://huggingface.co/datasets/Ian824/High-Resolution-Rainy-Image">HRI</a>, <a href="https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi">ExtremeRain</a>) |
+  <a href="https://deepwiki.com/kb824999404/CARLARain">DeepWiki</a>
 </div>
 
 </div>
