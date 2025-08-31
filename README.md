@@ -186,7 +186,7 @@ In the rendering stage, we create a High-resolution Rainy Image (HRI) dataset in
 
 Based on CARLARain, we construct an extreme rainy street scene image dataset, ExtremeRain. This dataset contains 8 different street scenes and 3 illumination conditions: daytime, sunset, night. The rainy scenes feature a rain intensity ranging from 5 mm/h - 100 mm/h, covering extreme rainfalls under complex illumination conditions. The dataset contains comprehensive label information to meet the requirements of multi-task visual perception models, including semantic segmentation, instance segmentation, depth estimation, and object detection. We split the dataset into train set and test set according to different scenes.
 
-* Get the ExtremeRain dataset: [Baidu Cloud](https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi) (Extraction code: i4zi)
+* Get the ExtremeRain dataset: [Hugging Face](https://huggingface.co/datasets/Ian824/High-Resolution-Rainy-Image/tree/main/CARLARain-Data/ExtremeRain), [Baidu Cloud](https://pan.baidu.com/s/1FXNk-y86rxXeUYwPoGWnpQ?pwd=i4zi) (Extraction code: i4zi)
 
 <table>
 <tr>
